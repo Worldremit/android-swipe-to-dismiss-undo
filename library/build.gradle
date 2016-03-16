@@ -1,8 +1,8 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 21
-    buildToolsVersion "21.1.1"
+    compileSdkVersion 23
+    buildToolsVersion "23.0.2"
 
     defaultConfig {
         minSdkVersion 15
@@ -19,7 +19,7 @@ android {
 }
 
 dependencies {
-    provided 'com.android.support:recyclerview-v7:21.0.3'
+    provided 'com.android.support:recyclerview-v7:23.2.1'
 }
 
 android.libraryVariants.all { variant ->
