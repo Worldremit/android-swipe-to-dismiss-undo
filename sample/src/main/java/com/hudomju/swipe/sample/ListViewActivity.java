@@ -45,6 +45,10 @@ public class ListViewActivity extends Activity {
                             public void onDismiss(ListViewAdapter view, int position) {
                                 adapter.remove(position);
                             }
+
+                            @Override
+                            public void onViewSwiped(int position) {
+                            }
                         });
         listView.setOnTouchListener(touchListener);
         // Setting this scroll listener is required to ensure that during ListView scrolling,

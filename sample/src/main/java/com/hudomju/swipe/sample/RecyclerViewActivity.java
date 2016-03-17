@@ -47,6 +47,10 @@ public class RecyclerViewActivity extends Activity {
                             public void onDismiss(RecyclerViewAdapter view, int position) {
                                 adapter.remove(position);
                             }
+
+                            @Override
+                            public void onViewSwiped(int position) {
+                            }
                         });
 
         recyclerView.setOnTouchListener(touchListener);

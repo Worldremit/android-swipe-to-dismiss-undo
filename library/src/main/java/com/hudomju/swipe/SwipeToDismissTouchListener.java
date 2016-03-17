@@ -129,6 +129,13 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
          * @param position The position of the dismissed item.
          */
         void onDismiss(SomeCollectionView recyclerView, int position);
+
+        /**
+         * Called when the swipe animation has completed and the view underneath is completely visible
+         *
+         * @param position The position of the dismissed item.
+         */
+        void onViewSwiped(int position);
     }
 
     /**
@@ -294,6 +301,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
                                 @Override
                                 public void onAnimationEnd(Animator animation) {
                                     performDismiss(downView, downPosition);
+                                    mCallbacks.onViewSwiped(downPosition);
                                 }
                             });
                 } else {
