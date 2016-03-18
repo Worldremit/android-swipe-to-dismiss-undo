@@ -179,7 +179,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
         return mRecyclerView.makeScrollListener(new AbsListView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(AbsListView absListView, int scrollState) {
-                processPendingDismisses();
+                undoPendingDismiss();
                 setEnabled(scrollState != AbsListView.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL);
             }
 
@@ -300,6 +300,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
                             .setListener(new AnimatorListenerAdapter() {
                                 @Override
                                 public void onAnimationEnd(Animator animation) {
+                                    undoPendingDismiss();
                                     performDismiss(downView, downPosition);
                                     mCallbacks.onViewSwiped(downPosition);
                                 }
