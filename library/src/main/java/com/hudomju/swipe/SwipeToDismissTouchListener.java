@@ -224,6 +224,11 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
                                 mPendingDismiss.rowContainer.dataContainerHasBeenDismissed;
                         mRowContainer = new RowContainer((ViewGroup) child);
                         mRowContainer.dataContainerHasBeenDismissed = dataContainerHasBeenDismissed;
+
+                        if(!dataContainerHasBeenDismissed) {
+                            undoPendingDismiss();
+                        }
+
                         break;
                     }
                 }
@@ -252,7 +257,6 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
                     mRowContainer.getCurrentSwipingView()
                             .animate()
                             .translationX(0)
-                            .alpha(1)
                             .setDuration(mAnimationTime)
                             .setListener(null);
                 }
@@ -295,12 +299,10 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
                     mRowContainer.getCurrentSwipingView()
                             .animate()
                             .translationX(dismissRight ? mViewWidth : -mViewWidth)
-                            .alpha(0)
                             .setDuration(mAnimationTime)
                             .setListener(new AnimatorListenerAdapter() {
                                 @Override
                                 public void onAnimationEnd(Animator animation) {
-                                    undoPendingDismiss();
                                     performDismiss(downView, downPosition);
                                     mCallbacks.onViewSwiped(downPosition);
                                 }
@@ -310,7 +312,6 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
                     mRowContainer.getCurrentSwipingView()
                             .animate()
                             .translationX(0)
-                            .alpha(1)
                             .setDuration(mAnimationTime)
                             .setListener(null);
                 }
@@ -348,8 +349,6 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
                 if (mSwiping) {
                     mRowContainer.getCurrentSwipingView().setTranslationX(deltaX - mSwipingSlop);
-                    mRowContainer.getCurrentSwipingView().setAlpha(Math.max(0f, Math.min(1f,
-                            1f - 2f * Math.abs(deltaX) / mViewWidth)));
                     return true;
                 }
                 break;
@@ -427,7 +426,6 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
             mPendingDismiss.rowContainer.dataContainer
                     .animate()
                     .translationX(0)
-                    .alpha(1)
                     .setDuration(mAnimationTime)
                     .setListener(null);
             mPendingDismiss = null;
@@ -451,10 +449,8 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
                     @Override
                     public void run() {
                         pendingDismissData.rowContainer.dataContainer.setTranslationX(0);
-                        pendingDismissData.rowContainer.dataContainer.setAlpha(1);
                         pendingDismissData.rowContainer.undoContainer.setVisibility(View.GONE);
                         pendingDismissData.rowContainer.undoContainer.setTranslationX(0);
-                        pendingDismissData.rowContainer.undoContainer.setAlpha(1);
 
                         lp.height = originalHeight;
                         pendingDismissData.rowContainer.container.setLayoutParams(lp);

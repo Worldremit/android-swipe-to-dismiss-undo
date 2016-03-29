@@ -41,7 +41,7 @@ public class RecyclerViewAdapter implements ViewAdapter {
 
     @Override
     public int getChildPosition(View child) {
-        return mRecyclerView.getChildPosition(child);
+        return mRecyclerView.getChildAdapterPosition(child);
     }
 
     @Override
