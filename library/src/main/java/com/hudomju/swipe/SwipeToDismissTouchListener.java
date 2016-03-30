@@ -146,7 +146,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
          * Called when the item is completely dismissed and removed from the list, after the undo layout is hidden.
          *
          * @param recyclerView The originating {@link android.support.v7.widget.RecyclerView}.
-         * @param position The position of the dismissed item.
+         * @param position     The position of the dismissed item.
          */
         void onDismiss(SomeCollectionView recyclerView, int position);
 
@@ -190,6 +190,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
     /**
      * Set the delay after which the pending items will be dismissed when there was no user action.
      * Set to a negative value to disable automatic dismissing items.
+     *
      * @param dismissDelayMillis The delay between onPendingDismiss and onDismiss calls, in milliseconds.
      */
     public void setDismissDelay(long dismissDelayMillis) {
@@ -286,6 +287,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
                     mRowContainer.getCurrentSwipingView()
                             .animate()
                             .translationX(0)
+                            .alpha(1)
                             .setDuration(mAnimationTime)
                             .setListener(null);
                 }
@@ -328,6 +330,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
                     mRowContainer.getCurrentSwipingView()
                             .animate()
                             .translationX(dismissRight ? mViewWidth : -mViewWidth)
+                            .alpha(0)
                             .setDuration(mAnimationTime)
                             .setListener(new AnimatorListenerAdapter() {
                                 @Override
@@ -341,6 +344,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
                     mRowContainer.getCurrentSwipingView()
                             .animate()
                             .translationX(0)
+                            .alpha(1)
                             .setDuration(mAnimationTime)
                             .setListener(null);
                 }
@@ -378,6 +382,8 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
                 if (mSwiping) {
                     mRowContainer.getCurrentSwipingView().setTranslationX(deltaX - mSwipingSlop);
+                    mRowContainer.getCurrentSwipingView().setAlpha(Math.max(0f, Math.min(1f,
+                            1f - 2f * Math.abs(deltaX) / mViewWidth)));
                     return true;
                 }
                 break;
@@ -425,9 +431,10 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
         // Notify the callbacks
         mCallbacks.onPendingDismiss(mRecyclerView, dismissPosition);
         // Automatically dismiss the item after a certain delay
-        if(mDismissDelayMillis >= 0)
+        if (mDismissDelayMillis >= 0) {
             mHandler.removeCallbacks(mDismissRunnable);
             mHandler.postDelayed(mDismissRunnable, mDismissDelayMillis);
+        }
     }
 
     /**
@@ -464,6 +471,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
             mPendingDismiss.rowContainer.dataContainer
                     .animate()
                     .translationX(0)
+                    .alpha(1)
                     .setDuration(mAnimationTime)
                     .setListener(null);
             mPendingDismiss = null;
@@ -487,8 +495,10 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
                     @Override
                     public void run() {
                         pendingDismissData.rowContainer.dataContainer.setTranslationX(0);
+                        pendingDismissData.rowContainer.dataContainer.setAlpha(1);
                         pendingDismissData.rowContainer.undoContainer.setVisibility(View.GONE);
                         pendingDismissData.rowContainer.undoContainer.setTranslationX(0);
+                        pendingDismissData.rowContainer.undoContainer.setAlpha(1);
 
                         lp.height = originalHeight;
                         pendingDismissData.rowContainer.container.setLayoutParams(lp);
