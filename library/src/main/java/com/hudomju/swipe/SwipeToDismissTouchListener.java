@@ -20,6 +20,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.graphics.Rect;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -91,6 +92,16 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
     private RowContainer mRowContainer;
     private boolean mPaused;
 
+    // Handler to dismiss pending items after a delay
+    private final Handler mHandler;
+    private final Runnable mDismissRunnable = new Runnable() {
+        @Override
+        public void run() {
+            processPendingDismisses();
+        }
+    };
+    private long mDismissDelayMillis = -1; // negative to disable automatic dismissing
+
     public class RowContainer {
 
         final View container;
@@ -106,7 +117,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
         }
 
         View getCurrentSwipingView() {
-            return dataContainerHasBeenDismissed ? undoContainer: dataContainer;
+            return dataContainerHasBeenDismissed ? undoContainer : dataContainer;
         }
 
     }
@@ -122,8 +133,17 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
         boolean canDismiss(int position);
 
         /**
-         * Called when the user has indicated they she would like to dismiss one or more list item
-         * positions.
+         * Called when an item is swiped away by the user and the undo layout is completely visible.
+         * Do NOT remove the list item yet, that should be done in {@link #onDismiss(com.hudomju.swipe.adapter.ViewAdapter, int)}
+         * This may also be called immediately before and item is completely dismissed.
+         *
+         * @param recyclerView The originating {@link android.support.v7.widget.RecyclerView}.
+         * @param position     The position of the dismissed item.
+         */
+        void onPendingDismiss(SomeCollectionView recyclerView, int position);
+
+        /**
+         * Called when the item is completely dismissed and removed from the list, after the undo layout is hidden.
          *
          * @param recyclerView The originating {@link android.support.v7.widget.RecyclerView}.
          * @param position The position of the dismissed item.
@@ -141,9 +161,9 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
     /**
      * Constructs a new swipe-to-dismiss touch listener for the given list view.
      *
-     * @param recyclerView  The list view whose items should be dismissable.
-     * @param callbacks The callback to trigger when the user has indicated that she would like to
-     *                  dismiss one or more list items.
+     * @param recyclerView The list view whose items should be dismissable.
+     * @param callbacks    The callback to trigger when the user has indicated that she would like to
+     *                     dismiss one or more list items.
      */
     public SwipeToDismissTouchListener(SomeCollectionView recyclerView,
                                        DismissCallbacks<SomeCollectionView> callbacks) {
@@ -155,6 +175,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
                 android.R.integer.config_shortAnimTime);
         mRecyclerView = recyclerView;
         mCallbacks = callbacks;
+        mHandler = new Handler();
     }
 
     /**
@@ -164,6 +185,15 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
      */
     public void setEnabled(boolean enabled) {
         mPaused = !enabled;
+    }
+
+    /**
+     * Set the delay after which the pending items will be dismissed when there was no user action.
+     * Set to a negative value to disable automatic dismissing items.
+     * @param dismissDelayMillis The delay between onPendingDismiss and onDismiss calls, in milliseconds.
+     */
+    public void setDismissDelay(long dismissDelayMillis) {
+        this.mDismissDelayMillis = dismissDelayMillis;
     }
 
     /**
@@ -215,7 +245,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
                     child = mRecyclerView.getChildAt(i);
                     child.getHitRect(rect);
                     if (rect.contains(x, y)) {
-                        assert(child instanceof ViewGroup &&
+                        assert (child instanceof ViewGroup &&
                                 ((ViewGroup) child).getChildCount() == 2) :
                                 "Each child needs to extend from ViewGroup and have two children";
 
@@ -225,10 +255,9 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
                         mRowContainer = new RowContainer((ViewGroup) child);
                         mRowContainer.dataContainerHasBeenDismissed = dataContainerHasBeenDismissed;
 
-                        if(!dataContainerHasBeenDismissed) {
+                        if (!dataContainerHasBeenDismissed) {
                             undoPendingDismiss();
                         }
-
                         break;
                     }
                 }
@@ -363,7 +392,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
         public PendingDismissData(int position, RowContainer rowContainer) {
             this.position = position;
-            this.rowContainer= rowContainer;
+            this.rowContainer = rowContainer;
         }
 
         @Override
@@ -379,7 +408,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
         // frame; in the future we may want to do something smarter and more performant.
         if (mPendingDismiss != null) {
             boolean dismissingDifferentRow = mPendingDismiss.position != dismissPosition;
-            int newPosition = mPendingDismiss.position < dismissPosition ? dismissPosition-1 : dismissPosition;
+            int newPosition = mPendingDismiss.position < dismissPosition ? dismissPosition - 1 : dismissPosition;
             processPendingDismisses();
             if (dismissingDifferentRow) {
                 addPendingDismiss(dismissView, newPosition);
@@ -393,11 +422,18 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
         dismissView.dataContainerHasBeenDismissed = true;
         dismissView.undoContainer.setVisibility(View.VISIBLE);
         mPendingDismiss = new PendingDismissData(dismissPosition, dismissView);
+        // Notify the callbacks
+        mCallbacks.onPendingDismiss(mRecyclerView, dismissPosition);
+        // Automatically dismiss the item after a certain delay
+        if(mDismissDelayMillis >= 0)
+            mHandler.removeCallbacks(mDismissRunnable);
+            mHandler.postDelayed(mDismissRunnable, mDismissDelayMillis);
     }
 
     /**
      * If a view was dismissed and the undo container is showing it will proceed with the final
      * dismiss of the item.
+     *
      * @return whether there were any pending rows to be dismissed.
      */
     public boolean processPendingDismisses() {
@@ -408,6 +444,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
 
     /**
      * Whether a row has been dismissed and is waiting for confirmation
+     *
      * @return whether there are any pending rows to be dismissed.
      */
     public boolean existPendingDismisses() {
@@ -417,6 +454,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
     /**
      * If a view was dismissed and the undo container is showing it will undo and make the data
      * container reappear.
+     *
      * @return whether there were any pending rows to be dismissed.
      */
     public boolean undoPendingDismiss() {
@@ -470,3 +508,4 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
         animator.start();
     }
 }
+
