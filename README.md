@@ -107,12 +107,20 @@ With a `ListView`:
 	                            public boolean canDismiss(int position) {
 	                                return true;
 	                            }
+	                            
+	                            @Override
+                                public void onPendingDismiss(ListViewAdapter recyclerView, int position) {
+    
+                                }
 	
 	                            @Override
 	                            public void onDismiss(ListViewAdapter view, int position) {
 	                                adapter.remove(position);
 	                            }
 	                        });
+	// Dismiss the item automatically after 3 seconds
+	touchListener.setDismissDelay(3000);
+	
 	listView.setOnTouchListener(touchListener);
 	listView.setOnScrollListener((AbsListView.OnScrollListener) touchListener.makeScrollListener());
 	listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -137,12 +145,21 @@ With a `RecyclerView`:
 	                            public boolean canDismiss(int position) {
 	                                return true;
 	                            }
+	                            
+	                            @Override
+                                public void onPendingDismiss(ListViewAdapter recyclerView, int position) {
+    
+                                }
 	
 	                            @Override
 	                            public void onDismiss(RecyclerViewAdapter view, int position) {
 	                                adapter.remove(position);
+	                                adapter.notifyItemRemoved(position);
+	                                adapter.notifyItemRangeChanged(position, adapter.getItemCount());
 	                            }
 	                        });
+	// Dismiss the item automatically after 3 seconds
+    touchListener.setDismissDelay(3000);
 	
 	recyclerView.setOnTouchListener(touchListener);
 	recyclerView.setOnScrollListener((RecyclerView.OnScrollListener)touchListener.makeScrollListener());

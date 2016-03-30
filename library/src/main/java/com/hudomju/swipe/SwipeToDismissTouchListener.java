@@ -20,6 +20,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.graphics.Rect;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -37,16 +38,16 @@ import com.hudomju.swipe.adapter.ViewAdapter;
  * It is given special treatment because by default it handles touches for its list items...
  * i.e. it's in charge of drawing the pressed state (the list selector), handling list item
  * clicks, etc.
- * <p/>
+ *
  * <p>After creating the listener, the caller should also call
  * {@link android.widget.ListView#setOnScrollListener(android.widget.AbsListView.OnScrollListener)},
  * passing in the scroll listener returned by {@link #makeScrollListener()}. If a scroll listener is
  * already assigned, the caller should still pass scroll changes through to this listener. This will
  * ensure that this {@link SwipeToDismissTouchListener} is paused during list view
  * scrolling.</p>
- * <p/>
+ *
  * <p>Example usage:</p>
- * <p/>
+ *
  * <pre>
  * SwipeDismissRecyclerViewTouchListener touchListener =
  *         new SwipeDismissRecyclerViewTouchListener(
@@ -62,7 +63,7 @@ import com.hudomju.swipe.adapter.ViewAdapter;
  * recyclerView.setOnTouchListener(touchListener);
  * recyclerView.setOnScrollListener(touchListener.makeScrollListener());
  * </pre>
- * <p/>
+ *
  * <p>This class Requires API level 12 or later due to use of {@link
  * android.view.ViewPropertyAnimator}.</p>
  */
@@ -90,6 +91,16 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
     private int mDownPosition;
     private RowContainer mRowContainer;
     private boolean mPaused;
+
+    // Handler to dismiss pending items after a delay
+    private final Handler mHandler;
+    private final Runnable mDismissRunnable = new Runnable() {
+        @Override
+        public void run() {
+            processPendingDismisses();
+        }
+    };
+    private long mDismissDelayMillis = -1; // negative to disable automatic dismissing
 
     public class RowContainer {
 
@@ -122,11 +133,20 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
         boolean canDismiss(int position);
 
         /**
-         * Called when the user has indicated they she would like to dismiss one or more list item
-         * positions.
+         * Called when an item is swiped away by the user and the undo layout is completely visible.
+         * Do NOT remove the list item yet, that should be done in {@link #onDismiss(com.hudomju.swipe.adapter.ViewAdapter, int)}
+         * This may also be called immediately before and item is completely dismissed.
          *
          * @param recyclerView The originating {@link android.support.v7.widget.RecyclerView}.
          * @param position     The position of the dismissed item.
+         */
+        void onPendingDismiss(SomeCollectionView recyclerView, int position);
+
+        /**
+         * Called when the item is completely dismissed and removed from the list, after the undo layout is hidden.
+         *
+         * @param recyclerView The originating {@link android.support.v7.widget.RecyclerView}.
+         * @param position The position of the dismissed item.
          */
         void onDismiss(SomeCollectionView recyclerView, int position);
 
@@ -155,6 +175,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
                 android.R.integer.config_shortAnimTime);
         mRecyclerView = recyclerView;
         mCallbacks = callbacks;
+        mHandler = new Handler();
     }
 
     /**
@@ -164,6 +185,15 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
      */
     public void setEnabled(boolean enabled) {
         mPaused = !enabled;
+    }
+
+    /**
+     * Set the delay after which the pending items will be dismissed when there was no user action.
+     * Set to a negative value to disable automatic dismissing items.
+     * @param dismissDelayMillis The delay between onPendingDismiss and onDismiss calls, in milliseconds.
+     */
+    public void setDismissDelay(long dismissDelayMillis) {
+        this.mDismissDelayMillis = dismissDelayMillis;
     }
 
     /**
@@ -397,6 +427,12 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
         dismissView.dataContainerHasBeenDismissed = true;
         dismissView.undoContainer.setVisibility(View.VISIBLE);
         mPendingDismiss = new PendingDismissData(dismissPosition, dismissView);
+        // Notify the callbacks
+        mCallbacks.onPendingDismiss(mRecyclerView, dismissPosition);
+        // Automatically dismiss the item after a certain delay
+        if(mDismissDelayMillis >= 0)
+            mHandler.removeCallbacks(mDismissRunnable);
+            mHandler.postDelayed(mDismissRunnable, mDismissDelayMillis);
     }
 
     /**
@@ -480,3 +516,4 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
         animator.start();
     }
 }
+
