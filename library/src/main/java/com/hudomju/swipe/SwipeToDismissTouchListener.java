@@ -102,7 +102,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
     };
     private long mDismissDelayMillis = -1; // negative to disable automatic dismissing
 
-    public class RowContainer {
+    public static class RowContainer {
 
         final View container;
         final View dataContainer;
@@ -119,7 +119,6 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
         View getCurrentSwipingView() {
             return dataContainerHasBeenDismissed ? undoContainer : dataContainer;
         }
-
     }
 
     /**
