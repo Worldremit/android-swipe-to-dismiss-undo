@@ -408,7 +408,7 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
         }
     }
 
-    private void performDismiss(RowContainer dismissView, int dismissPosition) {
+    public void performDismiss(RowContainer dismissView, int dismissPosition) {
         // Animate the dismissed list item to zero-height and fire the dismiss callback when
         // all dismissed list item animations have completed. This triggers layout on each animation
         // frame; in the future we may want to do something smarter and more performant.
