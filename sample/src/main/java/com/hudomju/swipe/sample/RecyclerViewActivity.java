@@ -4,9 +4,11 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -17,8 +19,6 @@ import com.hudomju.swipe.adapter.RecyclerViewAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static android.widget.Toast.LENGTH_SHORT;
 
 public class RecyclerViewActivity extends Activity {
 
@@ -59,7 +59,7 @@ public class RecyclerViewActivity extends Activity {
                             public void onViewSwiped(int position) {
                             }
                         });
-        touchListener.setDismissDelay(TIME_TO_AUTOMATICALLY_DISMISS_ITEM);
+        //        touchListener.setDismissDelay(TIME_TO_AUTOMATICALLY_DISMISS_ITEM);
         recyclerView.setOnTouchListener(touchListener);
         // Setting this scroll listener is required to ensure that during ListView scrolling,
         // we don't look for swipes.
@@ -68,12 +68,22 @@ public class RecyclerViewActivity extends Activity {
                 new OnItemClickListener() {
                     @Override
                     public void onItemClick(View view, int position) {
+                        if (true) {
+                            Object tag = view.getTag();
+                            if (tag != null) {
+                                FrameLayout parent = (FrameLayout) view.getParent();
+                                SwipeToDismissTouchListener.RowContainer rc = new SwipeToDismissTouchListener.RowContainer(parent);
+                                touchListener.dismissView(rc, position);
+                                return;
+                            }
+                        }
+
                         if (view.getId() == R.id.txt_delete) {
                             touchListener.processPendingDismisses();
                         } else if (view.getId() == R.id.txt_undo) {
                             touchListener.undoPendingDismiss();
                         } else { // R.id.txt_data
-                            Toast.makeText(RecyclerViewActivity.this, "Position " + position, LENGTH_SHORT).show();
+                            Toast.makeText(RecyclerViewActivity.this, "Position " + position, Toast.LENGTH_SHORT).show();
                         }
                     }
                 }));
@@ -114,6 +124,7 @@ public class RecyclerViewActivity extends Activity {
         static class MyViewHolder extends RecyclerView.ViewHolder {
 
             TextView dataTextView;
+
             MyViewHolder(View view) {
                 super(view);
                 dataTextView = ((TextView) view.findViewById(R.id.txt_data));
