@@ -1,0 +1,4 @@
+<resources>
+    <string name="ParentSwipeView">ParentSwipeView</string>
+    <string name="UpperView">UpperView</string>
+</resources>

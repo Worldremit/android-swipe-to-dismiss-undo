@@ -4,11 +4,9 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -68,14 +66,10 @@ public class RecyclerViewActivity extends Activity {
                 new OnItemClickListener() {
                     @Override
                     public void onItemClick(View view, int position) {
-                        if (true) {
-                            Object tag = view.getTag();
-                            if (tag != null) {
-                                FrameLayout parent = (FrameLayout) view.getParent();
-                                SwipeToDismissTouchListener.RowContainer rc = new SwipeToDismissTouchListener.RowContainer(parent);
-                                touchListener.dismissView(rc, position);
-                                return;
-                            }
+
+                        if (touchListener.upperViewClicked(view)) {
+                            touchListener.dismissView(touchListener.getUpperViewRowContainer(view), position);
+                            return;
                         }
 
                         if (view.getId() == R.id.txt_delete) {

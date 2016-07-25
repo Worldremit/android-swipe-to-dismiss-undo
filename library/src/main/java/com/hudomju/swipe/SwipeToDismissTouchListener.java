@@ -423,6 +423,26 @@ public class SwipeToDismissTouchListener<SomeCollectionView extends ViewAdapter>
         }
     }
 
+    public boolean upperViewClicked(View view) {
+        Object tag = view.getTag();
+        return tag != null && tag.toString().equalsIgnoreCase(view.getContext().getString(R.string.UpperView));
+    }
+
+    public RowContainer getUpperViewRowContainer(View view) {
+        return new RowContainer(getParentContainer(view));
+    }
+
+    private ViewGroup getParentContainer(View view) {
+        if (view.getId() == android.R.id.content) throw new RuntimeException("'ParentSwipeView' tag not found for the swipe view container");
+
+        Object tag = view.getTag();
+        if (tag != null && tag.toString().equalsIgnoreCase(view.getContext().getString(R.string.ParentSwipeView))) {
+            return (ViewGroup) view;
+        } else {
+            return getParentContainer((ViewGroup) view.getParent());
+        }
+    }
+
     public void dismissView(final RowContainer container, final int position) {
         container.getCurrentSwipingView()
                 .animate()
